@@ -6,40 +6,12 @@ module moneyfi::vault {
     
     use moneyfi::wallet_account::WalletAccount;
 
-    // ========================================
-    // Constants
-    // ========================================
-
-    /// Withdraw request status: Pending
-    const STATUS_PENDING: u8 = 0;
-    
-    /// Withdraw request status: Success
-    const STATUS_SUCCESS: u8 = 1;
-    
-    /// Withdraw request status: Failed
-    const STATUS_FAILED: u8 = 2;
-
     // -- Errors
     const E_ALREADY_INITIALIZED: u64 = 1;
     const E_DEPOSIT_NOT_ALLOWED: u64 = 2;
     const E_WITHDRAW_NOT_ALLOWED: u64 = 3;
     const E_ASSET_NOT_SUPPORTED: u64 = 4;
     const E_DEPRECATED: u64 = 5;
-
-    // ========================================
-    // Structs
-    // ========================================
-
-    struct WithdrawRequest has store, drop, copy {
-        request_id: u64,
-        wallet_id: vector<u8>,
-        asset: Object<Metadata>,
-        amount: u64,
-        status: u8,
-        requested_at: u64,
-        updated_at: u64,
-        error_message: vector<u8>
-    }
 
     // ========================================
     // Events
@@ -71,16 +43,6 @@ module moneyfi::vault {
         wallet_id: vector<u8>,
         asset: Object<Metadata>,
         amount: u64,
-        timestamp: u64
-    }
-
-    #[event]
-    struct UpdateStatusEvent has drop, store {
-        request_id: u64,
-        wallet_id: vector<u8>,
-        old_status: u8,
-        new_status: u8,
-        error_message: vector<u8>,
         timestamp: u64
     }
 
@@ -206,60 +168,9 @@ module moneyfi::vault {
         amount: u64
     );
 
-    /// Update the status of a withdrawal request
-    /// Can only be called by service account (backend)
-    /// @param sender: Service account signer
-    /// @param wallet_id: Wallet identifier
-    /// @param request_id: ID of the withdrawal request
-    /// @param new_status: New status (STATUS_PENDING, STATUS_SUCCESS, or STATUS_FAILED)
-    /// @param error_message: Error message if status is STATUS_FAILED, empty otherwise
-    public entry fun update_withdraw_request_status(
-        sender: &signer,
-        wallet_id: vector<u8>,
-        request_id: u64,
-        new_status: u8,
-        error_message: vector<u8>
-    );
-
     // ========================================
     // View Functions
     // ========================================
-
-    /// Get list of pending withdrawal request IDs for a wallet
-    /// @param wallet_id: Wallet identifier
-    /// @return vector<u64> - List of pending request IDs
-    #[view]
-    public fun get_pending_withdraw_requests(
-        wallet_id: vector<u8>
-    ): vector<u64>;
-
-    /// Get list of failed withdrawal request IDs for a wallet
-    /// @param wallet_id: Wallet identifier
-    /// @return vector<u64> - List of failed request IDs
-    #[view]
-    public fun get_failed_withdraw_requests(
-        wallet_id: vector<u8>
-    ): vector<u64>;
-
-    /// Get the status and error message of a withdrawal request
-    /// @param wallet_id: Wallet identifier
-    /// @param request_id: ID of the withdrawal request
-    /// @return (u8, vector<u8>) - Tuple of (status, error_message)
-    #[view]
-    public fun get_withdraw_request_status(
-        wallet_id: vector<u8>,
-        request_id: u64
-    ): (u8, vector<u8>);
-
-    /// Get full details of a withdrawal request
-    /// @param wallet_id: Wallet identifier
-    /// @param request_id: ID of the withdrawal request
-    /// @return WithdrawRequest - Complete request details
-    #[view]
-    public fun get_withdraw_request(
-        wallet_id: vector<u8>,
-        request_id: u64
-    ): WithdrawRequest;
 
     /// Get list of all supported assets in vault
     /// @return vector<address> - List of supported asset addresses

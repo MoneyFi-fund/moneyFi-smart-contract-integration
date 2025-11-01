@@ -17,33 +17,14 @@ A vault for supported assets that:
 
 ---
 
-### Constants
-
-| Name | Type | Description |
-|------|------|-------------|
-| `STATUS_PENDING` | `u8 = 0` | Withdrawal request is pending |
-| `STATUS_SUCCESS` | `u8 = 1` | Withdrawal request succeeded |
-| `STATUS_FAILED`  | `u8 = 2` | Withdrawal request failed |
-
----
-
-### Data Structures
-
-#### `WithdrawRequest`
-```move
-struct WithdrawRequest has store, drop, copy {
-    request_id: u64,
-    wallet_id: vector<u8>,
-    asset: Object<Metadata>,
-    amount: u64,
-    status: u8,
-    requested_at: u64,
-    updated_at: u64,
-    error_message: vector<u8>
-}
-```
-
-Represents a withdrawal request with its status and metadata.
+## Error Codes
+| Code | Name                        | Description |
+|------|-----------------------------|-------------|
+| `1`  | `E_ALREADY_INITIALIZED`     | Vault has already been initialized |
+| `2`  | `E_DEPOSIT_NOT_ALLOWED`     | Deposit is not permitted (asset unsupported or vault locked) |
+| `3`  | `E_WITHDRAW_NOT_ALLOWED`    | Withdrawal is not permitted (sync disabled or lock period active) |
+| `4`  | `E_ASSET_NOT_SUPPORTED`     | Asset is not supported by the vault |
+| `5`  | `E_DEPRECATED`              | Function or feature is deprecated |
 
 ---
 
@@ -110,61 +91,7 @@ Create an asynchronous withdrawal request that will be processed later by a serv
 **Events Emitted:**
 * `RequestWithdrawEvent` - Contains request_id, wallet_id, asset, amount, and timestamp
 
----
-
-### `update_withdraw_request_status`
-```move
-public entry fun update_withdraw_request_status(
-    sender: &signer,
-    wallet_id: vector<u8>,
-    request_id: u64,
-    new_status: u8,
-    error_message: vector<u8>
-)
-```
-
-**Description:**
-Update the status of a pending withdrawal request.
-Only callable by an authorized service account.
-
-**Parameters**
-
-* `sender`: Service account signer.
-* `wallet_id`: Wallet identifier (32 bytes).
-* `request_id`: Withdrawal request ID.
-* `new_status`: One of `STATUS_PENDING`, `STATUS_SUCCESS`, or `STATUS_FAILED`.
-* `error_message`: Error message when status is `STATUS_FAILED`, empty otherwise.
-
-**Events Emitted:**
-* `UpdateStatusEvent` - Contains request_id, wallet_id, old_status, new_status, error_message, and timestamp
-
----
-
 ## Public Functions
-
-### `create_withdraw_request`
-```move
-public fun create_withdraw_request(
-    account: &Object<WalletAccount>,
-    asset: Object<Metadata>,
-    amount: u64
-): u64
-```
-
-**Description:**
-Create a withdrawal request programmatically. Returns the request ID for tracking. This function can be called by other contracts for integration purposes.
-
-**Parameters**
-
-* `account`: Wallet account object.
-* `asset`: Asset metadata object.
-* `amount`: Amount to withdraw.
-
-**Returns:**
-* `u64` - The created request ID
-
----
-
 ### `get_lp_token`
 ```move
 public fun get_lp_token(): Object<Metadata>
@@ -186,91 +113,6 @@ Return the on-chain address of the vault object.
 ---
 
 ## View Functions
-
-### `get_pending_withdraw_requests`
-```move
-#[view]
-public fun get_pending_withdraw_requests(
-    wallet_id: vector<u8>
-): vector<u64>
-```
-
-**Description:**
-Get all pending withdrawal request IDs for a specific wallet.
-
-**Parameters**
-
-* `wallet_id`: Wallet identifier (32 bytes).
-
-**Returns:**
-* `vector<u64>` - List of pending request IDs
-
----
-
-### `get_failed_withdraw_requests`
-```move
-#[view]
-public fun get_failed_withdraw_requests(
-    wallet_id: vector<u8>
-): vector<u64>
-```
-
-**Description:**
-Get all failed withdrawal request IDs for a specific wallet.
-
-**Parameters**
-
-* `wallet_id`: Wallet identifier (32 bytes).
-
-**Returns:**
-* `vector<u64>` - List of failed request IDs
-
----
-
-### `get_withdraw_request_status`
-```move
-#[view]
-public fun get_withdraw_request_status(
-    wallet_id: vector<u8>,
-    request_id: u64
-): (u8, vector<u8>)
-```
-
-**Description:**
-Get the status and error message for a specific withdrawal request.
-
-**Parameters**
-
-* `wallet_id`: Wallet identifier (32 bytes).
-* `request_id`: Withdrawal request ID.
-
-**Returns:**
-* `(u8, vector<u8>)` - Tuple of (status, error_message)
-
----
-
-### `get_withdraw_request`
-```move
-#[view]
-public fun get_withdraw_request(
-    wallet_id: vector<u8>,
-    request_id: u64
-): WithdrawRequest
-```
-
-**Description:**
-Get the complete details of a withdrawal request.
-
-**Parameters**
-
-* `wallet_id`: Wallet identifier (32 bytes).
-* `request_id`: Withdrawal request ID.
-
-**Returns:**
-* `WithdrawRequest` - Complete request details including all metadata
-
----
-
 ### `get_supported_assets`
 ```move
 #[view]
@@ -317,24 +159,28 @@ public fun get_assets(): (vector<address>, vector<u128>)
 **Description:**
 Return a list of all asset addresses and their total amounts in the vault.
 
----
-
-## Withdrawal Request Flow
-
-### User Flow
-1. User calls `request_withdraw(sender, asset, amount)`
-2. A withdrawal request is created and stored in the wallet account's registry
-3. User can query pending requests using `get_pending_withdraw_requests(wallet_id)`
-4. Backend processes the request and calls `update_withdraw_request_status(...)`
-5. User can check status using `get_withdraw_request_status(wallet_id, request_id)`
----
-
 # Module: `moneyfi::wallet_account`
 
 ### Purpose
 
 The `wallet_account` module manages user-level account objects, balances, rewards, and referral data.
 Each wallet is identified by a `wallet_id` (`vector<u8>` of length 32).
+
+---
+
+## Error Code
+| Code | Name                                 | Description |
+|------|--------------------------------------|-------------|
+| `1`  | `E_WALLET_ACCOUNT_EXISTS`            | Wallet account with this `wallet_id` already exists |
+| `2`  | `E_WALLET_ACCOUNT_NOT_EXISTS`        | Wallet account does not exist |
+| `3`  | `E_NOT_APTOS_WALLET_ACCOUNT`         | Object is not a valid `WalletAccount` |
+| `4`  | `E_NOT_OWNER`                        | Caller is not the wallet owner |
+| `5`  | `E_WALLET_ACCOUNT_NOT_CONNECTED`     | Wallet account is not connected to the system |
+| `6`  | `E_WALLET_ACCOUNT_ALREADY_CONNECTED` | Wallet account is already connected |
+| `7`  | `E_INVALID_ARGUMENT`                 | Invalid argument (wrong length, format, etc.) |
+| `8`  | `E_STRATEGY_DATA_NOT_EXISTS`         | Strategy data does not exist for this wallet |
+| `9`  | `E_REFERRER_WALLET_ID_EXISTS`        | Referrer wallet ID has already been set |
+| `10` | `E_DEPRECATED`                       | Function or feature is deprecated |
 
 ---
 
@@ -363,6 +209,24 @@ Register a new wallet account and associate it with an owner and optional referr
 ---
 
 ## View Functions
+
+### `get_current_amount`
+```move
+#[view]
+public fun get_current_amount(
+    wallet_id: vector<u8>,
+    asset: Object<Metadata>
+): u64;
+```
+
+### `get_withdrawal_state`
+```move
+#[view]
+public fun get_withdrawal_state(
+    wallet_id: vector<u8>,
+    asset: Object<Metadata>
+): (u64, u64);
+```
 
 ### `has_strategy_data`
 ```move
@@ -465,11 +329,20 @@ subdir = "aptos-framework"
 
 ---
 
+## Withdrawal Request Flow
+
+### User Flow
+1. User calls `request_withdraw(sender, asset, amount)`
+2. A withdrawal request is created and emit event
+3. Backend processes the request
+4. User can check with `get_withdrawal_state` or `get_current_amount`
+5. User can withdraw full `current_amount` or wait for `current_amount` = `request_amount`
+---
+
 ## Integration Notes
 
 - Only specific **vault functions** are designed for **direct contract-to-contract integration**.  
 - Use `wallet_account::get_wallet_account` to resolve the `WalletAccount` object before interacting with the vault.  
 - The `wallet_account::register` function **can only be called by the MoneyFi system** (not by external users or third-party contracts).  
-- **Asynchronous withdrawals** are stored in the wallet account's registry and require an external service (backend) to process and update their status using `update_withdraw_request_status`.
 - **Withdrawal requests** are stored per wallet account, not globally. Each request has a unique ID within that wallet's registry.
 - LP token accounting, referral tracking, and fee distribution are handled internally by the vault.

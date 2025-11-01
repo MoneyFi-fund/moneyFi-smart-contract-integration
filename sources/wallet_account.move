@@ -49,6 +49,16 @@ module moneyfi::wallet_account {
         rewards: OrderedMap<address, u64>
     }
 
+    struct WithdrawalState has key {
+        asset: OrderedMap<address, WithdrawalAsset>
+    }
+
+    struct WithdrawalAsset has store, copy, drop {
+        requested_amount: u64,
+        // available amount for withdrawal
+        available_amount: u64
+    }
+
     // ========================================
     // Public Entry Functions
     // ========================================
@@ -70,11 +80,25 @@ module moneyfi::wallet_account {
     // View Functions
     // ========================================
 
-    /// Check if a wallet account has specific strategy data
+    /// Get current amount for a specific asset in a wallet
     /// @param wallet_id: Wallet identifier
-    /// @return bool - True if strategy data exists
+    /// @param asset: Asset metadata object
+    /// @return u64 - Current amount of the asset in the wallet
     #[view]
-    public fun has_strategy_data<T: store>(wallet_id: vector<u8>): bool;
+    public fun get_current_amount(
+        wallet_id: vector<u8>,
+        asset: Object<Metadata>
+    ): u64;
+
+    /// Get withdrawal state for a specific asset in a wallet
+    /// @param wallet_id: Wallet identifier
+    /// @param asset: Asset metadata object
+    /// @return (requested_amount, available_amount)
+    #[view]
+    public fun get_withdrawal_state(
+        wallet_id: vector<u8>,
+        asset: Object<Metadata>
+    ): (u64, u64);
 
     /// Check if a wallet_id is a valid wallet account
     /// @param wallet_id: Wallet identifier
