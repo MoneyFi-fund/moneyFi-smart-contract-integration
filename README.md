@@ -1,4 +1,4 @@
-# MoneyFi Vault — Complete Documentation
+# MoneyFi Vault — Via Contract
 
 ## Overview
 
