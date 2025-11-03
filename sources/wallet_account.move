@@ -72,9 +72,7 @@ module moneyfi::wallet_account {
         verifier: &signer,
         wallet_id: vector<u8>,
         referrer_wallet_id: vector<u8>
-    ) {
-        abort 0;
-    }
+    );
 
     // ========================================
     // View Functions
@@ -93,12 +91,12 @@ module moneyfi::wallet_account {
     /// Get withdrawal state for a specific asset in a wallet
     /// @param wallet_id: Wallet identifier
     /// @param asset: Asset metadata object
-    /// @return (requested_amount, available_amount)
+    /// @return (requested_amount, available_amount, is_successful)
     #[view]
     public fun get_withdrawal_state(
         wallet_id: vector<u8>,
         asset: Object<Metadata>
-    ): (u64, u64);
+    ): (u64, u64, bool);
 
     /// Check if a wallet_id is a valid wallet account
     /// @param wallet_id: Wallet identifier

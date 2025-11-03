@@ -1,4 +1,5 @@
-# MoneyFi Vault — Via Contract
+# MoneyFi Vault — Complete Documentation
+
 ## Overview
 
 The **MoneyFi Vault** module provides the main DeFi vault logic that manages user deposits, withdrawals, LP token issuance, referral rewards, and strategy allocations.  
@@ -11,7 +12,7 @@ It interacts closely with the `wallet_account` module to track user balances and
 ### Purpose
 A vault for supported assets that:
 - Accepts deposits and issues LP tokens
-- Supports synchronous and asynchronous withdrawals
+- Supports **synchronous** (immediate) and **asynchronous** (request-based) withdrawals
 - Manages referral and system fees
 - Interfaces with investment strategies and fee sharing logic
 
@@ -40,13 +41,20 @@ public entry fun deposit(
 ```
 
 **Description:**
-Deposit a supported asset into the vault. The depositor receives LP tokens proportional to the deposited amount.
+Deposit a supported asset into the vault. The depositor receives LP tokens proportional to the deposited amount based on the current exchange rate.
 
-**Parameters**
+**Parameters:**
+* `sender`: The user's signer
+* `asset`: Asset metadata object to deposit
+* `amount`: Amount to deposit (must be within min/max deposit limits)
 
-* `sender`: The user's signer.
-* `asset`: Asset metadata object.
-* `amount`: Amount to deposit.
+**Events Emitted:**
+* `DepositedEvent` - Contains sender, wallet_account, asset, amount, lp_amount, and timestamp
+
+**Requirements:**
+* Asset must be supported by the vault
+* Amount must be within configured min/max deposit limits
+* Vault deposits must be enabled
 
 ---
 
@@ -60,13 +68,22 @@ public entry fun withdraw(
 ```
 
 **Description:**
-Withdraw an asset from the vault by burning the corresponding LP tokens. This is a synchronous withdrawal that happens immediately.
+**Synchronous withdrawal** - Withdraw an asset from the vault immediately by burning the corresponding LP tokens. This operation completes in the same transaction.
 
-**Parameters**
+**Parameters:**
+* `sender`: The user's signer
+* `asset`: Asset metadata object to withdraw
+* `amount`: Amount to withdraw (must be within min/max withdraw limits)
 
-* `sender`: The user's signer.
-* `asset`: Asset metadata object.
-* `amount`: Amount to withdraw.
+**Events Emitted:**
+* `WithdrawnEvent` - Contains sender, wallet_account, asset, amount, lp_amount, and timestamp
+
+**Requirements:**
+* Asset must be supported by the vault
+* Amount must be within configured min/max withdraw limits
+* Vault withdrawals must be enabled
+* Sufficient liquidity must be available in the vault
+* User must have sufficient LP tokens
 
 ---
 
@@ -80,25 +97,84 @@ public entry fun request_withdraw(
 ```
 
 **Description:**
-Create an asynchronous withdrawal request that will be processed later by a service account (backend). The request is stored in the wallet account's registry.
+**Asynchronous withdrawal** - Create a withdrawal request that will be processed later by the backend service. Use this when immediate liquidity is not available or for larger withdrawals that need processing time.
 
-**Parameters**
-
-* `sender`: The user's signer.
-* `asset`: Asset metadata object.
-* `amount`: Amount to withdraw.
+**Parameters:**
+* `sender`: The user's signer
+* `asset`: Asset metadata object to withdraw
+* `amount`: Amount to withdraw
 
 **Events Emitted:**
 * `RequestWithdrawEvent` - Contains request_id, wallet_id, asset, amount, and timestamp
 
+**Requirements:**
+* User must have sufficient balance to cover the requested amount
+* Request is queued and processed by backend service
+
+**Note:** After requesting, users should monitor their withdrawal state using `get_withdrawal_state` to check when funds are available.
+
+---
+
+### `withdraw_from_request`
+```move
+public entry fun withdraw_from_request(
+    sender: &signer,
+    asset: Object<Metadata>
+)
+```
+
+**Description:**
+Complete a withdrawal from an existing withdrawal request. This function withdraws the **available amount** that has been prepared by the backend service.
+
+**Parameters:**
+* `sender`: The user's signer
+* `asset`: Asset metadata object to withdraw
+
+**Events Emitted:**
+* `WithdrawnEvent` - Contains sender, wallet_account, asset, amount, lp_amount, and timestamp
+
+**Requirements:**
+* Must have an existing withdrawal request for the specified asset
+* Available amount must be greater than 0 (backend must have processed the request)
+
+**Note:** This function withdraws whatever amount is currently available, which may be less than the originally requested amount if the request is still being processed.
+
+---
+
 ## Public Functions
-### `get_lp_token`
+
+### `create_withdraw_request`
+```move
+public fun create_withdraw_request(
+    account: &Object<WalletAccount>,
+    asset: Object<Metadata>,
+    amount: u64
+): u64
+```
+
+**Description:**
+Programmatically create a withdrawal request from another contract. Returns the request ID for tracking.
+
+**Parameters:**
+* `account`: Wallet account object
+* `asset`: Asset metadata object to withdraw
+* `amount`: Amount to withdraw
+
+**Returns:**
+* `u64` - Unique request ID for this withdrawal request
+
+---
+
+## View Functions
 ```move
 public fun get_lp_token(): Object<Metadata>
 ```
 
 **Description:**
 Get the LP token metadata object issued by the vault.
+
+**Returns:**
+* `Object<Metadata>` - LP token metadata object
 
 ---
 
@@ -110,9 +186,13 @@ public fun get_vault_address(): address
 **Description:**
 Return the on-chain address of the vault object.
 
+**Returns:**
+* `address` - Vault address
+
 ---
 
 ## View Functions
+
 ### `get_supported_assets`
 ```move
 #[view]
@@ -121,6 +201,9 @@ public fun get_supported_assets(): vector<address>
 
 **Description:**
 Return all supported asset addresses in the vault.
+
+**Returns:**
+* `vector<address>` - List of supported asset addresses
 
 ---
 
@@ -135,6 +218,12 @@ public fun get_pending_referral_fees(
 **Description:**
 Return a mapping of pending referral fees (asset → amount) for a given wallet.
 
+**Parameters:**
+* `wallet_id`: Wallet identifier (32 bytes)
+
+**Returns:**
+* `OrderedMap<address, u64>` - Map of asset address to pending referral fee amount
+
 ---
 
 ### `get_asset`
@@ -148,6 +237,12 @@ public fun get_asset(
 **Description:**
 Return the total amount, total LP supply, and total distributed amount for an asset.
 
+**Parameters:**
+* `asset`: Asset metadata object
+
+**Returns:**
+* `(u128, u128, u128)` - Tuple of (total_amount, total_lp_amount, total_distributed_amount)
+
 ---
 
 ### `get_assets`
@@ -158,6 +253,38 @@ public fun get_assets(): (vector<address>, vector<u128>)
 
 **Description:**
 Return a list of all asset addresses and their total amounts in the vault.
+
+**Returns:**
+* `(vector<address>, vector<u128>)` - Tuple of (asset_addresses, total_amounts)
+
+---
+
+## Public Functions
+### `get_lp_token`
+```move
+public fun get_lp_token(): Object<Metadata>
+```
+
+**Description:**
+Get the LP token metadata object issued by the vault.
+
+**Returns:**
+* `Object<Metadata>` - LP token metadata object
+
+---
+
+### `get_vault_address`
+```move
+public fun get_vault_address(): address
+```
+
+**Description:**
+Return the on-chain address of the vault object.
+
+**Returns:**
+* `address` - Vault address
+
+---
 
 # Module: `moneyfi::wallet_account`
 
@@ -199,12 +326,16 @@ public entry fun register(
 **Description:**
 Register a new wallet account and associate it with an owner and optional referrer.
 
-**Parameters**
+**Parameters:**
+* `sender`: Wallet owner's signer
+* `verifier`: Verifier signer (authorization check - **MoneyFi system only**)
+* `wallet_id`: Wallet identifier (must be exactly 32 bytes)
+* `referrer_wallet_id`: Referrer's wallet ID (can be empty vector if no referrer)
 
-* `sender`: Wallet owner's signer.
-* `verifier`: Verifier signer (authorization check).
-* `wallet_id`: Wallet identifier (32 bytes).
-* `referrer_wallet_id`: Referrer's wallet ID.
+**Requirements:**
+* Wallet ID must be exactly 32 bytes
+* Wallet ID must not already exist
+* Must be called with valid verifier signature
 
 ---
 
@@ -216,8 +347,20 @@ Register a new wallet account and associate it with an owner and optional referr
 public fun get_current_amount(
     wallet_id: vector<u8>,
     asset: Object<Metadata>
-): u64;
+): u64
 ```
+
+**Description:**
+Get the current balance available for withdrawal for a specific asset.
+
+**Parameters:**
+* `wallet_id`: Wallet identifier (32 bytes)
+* `asset`: Asset metadata object
+
+**Returns:**
+* `u64` - Current amount of the asset in the wallet
+
+---
 
 ### `get_withdrawal_state`
 ```move
@@ -225,16 +368,23 @@ public fun get_current_amount(
 public fun get_withdrawal_state(
     wallet_id: vector<u8>,
     asset: Object<Metadata>
-): (u64, u64);
+): (u64, u64, bool)
 ```
 
-### `has_strategy_data`
-```move
-#[view]
-public fun has_strategy_data<T: store>(
-    wallet_id: vector<u8>
-): bool
-```
+**Description:**
+Get the withdrawal request state for a specific asset in a wallet.
+
+**Parameters:**
+* `wallet_id`: Wallet identifier (32 bytes)
+* `asset`: Asset metadata object
+
+**Returns:**
+* `(u64, u64, bool)` - Tuple of:
+  - `requested_amount`: Total amount requested for withdrawal
+  - `available_amount`: Amount currently available to withdraw
+  - `is_successful`: Whether the request check was successful
+
+---
 
 ### `has_wallet_account`
 ```move
@@ -244,6 +394,17 @@ public fun has_wallet_account(
 ): bool
 ```
 
+**Description:**
+Check if a wallet account exists for the given wallet_id.
+
+**Parameters:**
+* `wallet_id`: Wallet identifier (32 bytes)
+
+**Returns:**
+* `bool` - True if wallet account exists, false otherwise
+
+---
+
 ### `get_wallet_account`
 ```move
 #[view]
@@ -251,6 +412,17 @@ public fun get_wallet_account(
     wallet_id: vector<u8>
 ): Object<WalletAccount>
 ```
+
+**Description:**
+Get the WalletAccount object for a given wallet_id.
+
+**Parameters:**
+* `wallet_id`: Wallet identifier (32 bytes)
+
+**Returns:**
+* `Object<WalletAccount>` - Wallet account object
+
+---
 
 ### `get_wallet_account_asset`
 ```move
@@ -261,6 +433,18 @@ public fun get_wallet_account_asset(
 ): AccountAsset
 ```
 
+**Description:**
+Get detailed asset data for a specific asset in a wallet account.
+
+**Parameters:**
+* `wallet_id`: Wallet identifier (32 bytes)
+* `asset`: Asset metadata object
+
+**Returns:**
+* `AccountAsset` - Complete asset data including all amounts, LP tokens, and rewards
+
+---
+
 ### `get_wallet_account_assets`
 ```move
 #[view]
@@ -269,6 +453,19 @@ public fun get_wallet_account_assets(
 ): (vector<address>, vector<AccountAsset>)
 ```
 
+**Description:**
+Get all assets data for a wallet account.
+
+**Parameters:**
+* `wallet_id`: Wallet identifier (32 bytes)
+
+**Returns:**
+* `(vector<address>, vector<AccountAsset>)` - Tuple of:
+  - List of asset addresses
+  - Corresponding AccountAsset data for each asset
+
+---
+
 ### `get_wallet_id_by_wallet_account`
 ```move
 #[view]
@@ -276,6 +473,15 @@ public fun get_wallet_id_by_wallet_account(
     object: Object<WalletAccount>
 ): vector<u8>
 ```
+
+**Description:**
+Get wallet_id from a wallet account object.
+
+**Parameters:**
+* `object`: Wallet account object
+
+**Returns:**
+* `vector<u8>` - Wallet identifier (32 bytes)
 
 ---
 
@@ -288,12 +494,34 @@ public fun get_wallet_account_object_address(
 ): address
 ```
 
+**Description:**
+Get the object address for a wallet account.
+
+**Parameters:**
+* `wallet_id`: Wallet identifier (32 bytes)
+
+**Returns:**
+* `address` - Wallet account object address
+
+---
+
 ### `get_owner_address`
 ```move
 public fun get_owner_address(
     wallet_id: vector<u8>
 ): address
 ```
+
+**Description:**
+Get the owner address for a wallet_id.
+
+**Parameters:**
+* `wallet_id`: Wallet identifier (32 bytes)
+
+**Returns:**
+* `address` - Owner wallet address
+
+---
 
 ### `get_wallet_account_by_address`
 ```move
@@ -302,12 +530,32 @@ public fun get_wallet_account_by_address(
 ): Object<WalletAccount>
 ```
 
+**Description:**
+Get wallet account object by owner address.
+
+**Parameters:**
+* `addr`: Owner address
+
+**Returns:**
+* `Object<WalletAccount>` - Wallet account object
+
+---
+
 ### `get_wallet_id_by_address`
 ```move
 public fun get_wallet_id_by_address(
     addr: address
 ): vector<u8>
 ```
+
+**Description:**
+Get wallet_id by owner address.
+
+**Parameters:**
+* `addr`: Owner address
+
+**Returns:**
+* `vector<u8>` - Wallet identifier (32 bytes)
 
 ---
 
@@ -332,17 +580,18 @@ subdir = "aptos-framework"
 ## Withdrawal Request Flow
 
 ### User Flow
-1. User calls `request_withdraw(sender, asset, amount)`
-2. A withdrawal request is created and emit event
-3. Backend processes the request
-4. User can check with `get_withdrawal_state` or `get_current_amount`
-5. User can withdraw full `current_amount` or wait for `current_amount` = `request_amount`
----
+
+1. The user calls `request_withdraw(sender, asset, amount)`.
+2. A withdrawal request is created and an event is emitted.
+3. The backend processes the withdrawal request.
+4. The user can check the status using `get_withdrawal_state`.
+   * If `is_successful` is `true`, the withdrawal process is complete.
+5. The user calls `withdraw_from_request` to withdraw the entire available amount.
 
 ## Integration Notes
 
 - Only specific **vault functions** are designed for **direct contract-to-contract integration**.  
 - Use `wallet_account::get_wallet_account` to resolve the `WalletAccount` object before interacting with the vault.  
 - The `wallet_account::register` function **can only be called by the MoneyFi system** (not by external users or third-party contracts).  
-- **Withdrawal requests** are stored per wallet account, not globally. Each request has a unique ID within that wallet's registry.
+- **Withdrawal requests** are stored per wallet account, not globally
 - LP token accounting, referral tracking, and fee distribution are handled internally by the vault.

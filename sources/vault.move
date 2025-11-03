@@ -157,6 +157,13 @@ module moneyfi::vault {
         amount: u64
     );
 
+    /// Withdraw asset from an existing withdrawal request
+    /// @param sender: User's signer
+    /// @param asset: Asset metadata object to withdraw
+    public entry fun withdraw_from_request(
+        sender: &signer, asset: Object<Metadata>
+    );
+
     /// Request a withdrawal (asynchronous withdrawal)
     /// Creates a withdrawal request that will be processed by backend
     /// @param sender: User's signer
