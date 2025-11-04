@@ -80,7 +80,7 @@ module moneyfi::vault {
     /// Withdraw asset from an existing withdrawal request
     /// @param sender: User's signer
     /// @param asset: Asset metadata object to withdraw
-    public entry fun withdraw_from_request(
+    public entry fun withdraw_requested_amount(
         sender: &signer, 
         asset: Object<Metadata>
     );

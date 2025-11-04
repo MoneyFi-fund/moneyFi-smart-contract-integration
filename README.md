@@ -115,9 +115,9 @@ public entry fun request_withdraw(
 
 ---
 
-### `withdraw_from_request`
+### `withdraw_requested_amount`
 ```move
-public entry fun withdraw_from_request(
+public entry fun withdraw_requested_amount(
     sender: &signer,
     asset: Object<Metadata>
 )
@@ -541,7 +541,7 @@ subdir = "aptos-framework"
 3. The backend processes the withdrawal request.
 4. The user can check the status using `get_withdrawal_state`.
    * If `is_successful` is `true`, the withdrawal process is complete.
-5. The user calls `withdraw_from_request` to withdraw the entire available amount.
+5. The user calls `withdraw_requested_amount` to withdraw the entire available amount.
 
 ## Integration Notes
 
