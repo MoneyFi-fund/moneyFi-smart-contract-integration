@@ -518,7 +518,7 @@ Get wallet_id by owner address.
 ```toml
 [package]
 name = "moneyfi"
-version = "1.2.3"
+version = "1.3.0"
 authors = []
 
 [addresses]
