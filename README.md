@@ -141,30 +141,6 @@ Complete a withdrawal from an existing withdrawal request. This function withdra
 
 ---
 
-## Public Functions
-
-### `create_withdraw_request`
-```move
-public fun create_withdraw_request(
-    account: &Object<WalletAccount>,
-    asset: Object<Metadata>,
-    amount: u64
-): u64
-```
-
-**Description:**
-Programmatically create a withdrawal request from another contract. Returns the request ID for tracking.
-
-**Parameters:**
-* `account`: Wallet account object
-* `asset`: Asset metadata object to withdraw
-* `amount`: Amount to withdraw
-
-**Returns:**
-* `u64` - Unique request ID for this withdrawal request
-
----
-
 ## View Functions
 ```move
 public fun get_lp_token(): Object<Metadata>
@@ -308,7 +284,7 @@ Each wallet is identified by a `wallet_id` (`vector<u8>` of length 32).
 | `8`  | `E_STRATEGY_DATA_NOT_EXISTS`         | Strategy data does not exist for this wallet |
 | `9`  | `E_REFERRER_WALLET_ID_EXISTS`        | Referrer wallet ID has already been set |
 | `10` | `E_DEPRECATED`                       | Function or feature is deprecated |
-
+| `11` | `E_INSUFFICIENT_FUND`                | Insufficient funds to request withdrawal |
 ---
 
 ## Entry Functions
@@ -340,27 +316,6 @@ Register a new wallet account and associate it with an owner and optional referr
 ---
 
 ## View Functions
-
-### `get_current_amount`
-```move
-#[view]
-public fun get_current_amount(
-    wallet_id: vector<u8>,
-    asset: Object<Metadata>
-): u64
-```
-
-**Description:**
-Get the current balance available for withdrawal for a specific asset.
-
-**Parameters:**
-* `wallet_id`: Wallet identifier (32 bytes)
-* `asset`: Asset metadata object
-
-**Returns:**
-* `u64` - Current amount of the asset in the wallet
-
----
 
 ### `get_withdrawal_state`
 ```move

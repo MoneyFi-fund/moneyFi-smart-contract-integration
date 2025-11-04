@@ -13,9 +13,9 @@ module moneyfi::wallet_account {
     const E_WALLET_ACCOUNT_ALREADY_CONNECTED: u64 = 6;
     const E_INVALID_ARGUMENT: u64 = 7;
     const E_STRATEGY_DATA_NOT_EXISTS: u64 = 8;
-    /// referrer wallet id has been set already
     const E_REFERRER_WALLET_ID_EXISTS: u64 = 9;
     const E_DEPRECATED: u64 = 10;
+    const E_INSUFFICIENT_FUND: u64 = 11;
 
     // ========================================
     // Structs
@@ -23,16 +23,13 @@ module moneyfi::wallet_account {
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct WalletAccount has key {
-        // wallet_id is a byte array of length 32
         wallet_id: vector<u8>,
-        // internal chain ID
         chain_id: u8,
         wallet_address: Option<address>,
         referrer_wallet_id: vector<u8>,
         assets: OrderedMap<address, AccountAsset>,
-        system_fee_percent: Option<u64>, // 100 => 1%
-        // [level_1, level_2, level_3, ...]
-        referral_percents: vector<u64>, // 100 => 1%,
+        system_fee_percent: Option<u64>,
+        referral_percents: vector<u64>,
         extend_ref: ExtendRef
     }
 
@@ -49,24 +46,15 @@ module moneyfi::wallet_account {
         rewards: OrderedMap<address, u64>
     }
 
-    struct WithdrawalState has key {
-        asset: OrderedMap<address, WithdrawalAsset>
-    }
-
-    struct WithdrawalAsset has store, copy, drop {
-        requested_amount: u64,
-        // available amount for withdrawal
-        available_amount: u64
-    }
-
     // ========================================
-    // Public Entry Functions
+    // Entry Functions
     // ========================================
+
     /// Register a new wallet account
-    /// @param sender: Signer of the wallet owner
-    /// @param verifier: Signer of the verifier
-    /// @param wallet_id: Wallet identifier
-    /// @param referrer_wallet_id: Referrer's wallet identifier
+    /// @param sender: Wallet owner's signer
+    /// @param verifier: Verifier signer (MoneyFi system only)
+    /// @param wallet_id: Wallet identifier (must be exactly 32 bytes)
+    /// @param referrer_wallet_id: Referrer's wallet identifier (can be empty vector)
     public entry fun register(
         sender: &signer,
         verifier: &signer,
@@ -78,42 +66,32 @@ module moneyfi::wallet_account {
     // View Functions
     // ========================================
 
-    /// Get current amount for a specific asset in a wallet
-    /// @param wallet_id: Wallet identifier
-    /// @param asset: Asset metadata object
-    /// @return u64 - Current amount of the asset in the wallet
-    #[view]
-    public fun get_current_amount(
-        wallet_id: vector<u8>,
-        asset: Object<Metadata>
-    ): u64;
-
     /// Get withdrawal state for a specific asset in a wallet
-    /// @param wallet_id: Wallet identifier
+    /// @param wallet_id: Wallet identifier (32 bytes)
     /// @param asset: Asset metadata object
-    /// @return (requested_amount, available_amount, is_successful)
+    /// @return (u64, u64, bool) - Tuple of (requested_amount, available_amount, is_successful)
     #[view]
     public fun get_withdrawal_state(
         wallet_id: vector<u8>,
         asset: Object<Metadata>
     ): (u64, u64, bool);
 
-    /// Check if a wallet_id is a valid wallet account
-    /// @param wallet_id: Wallet identifier
-    /// @return bool - True if wallet account exists
+    /// Check if a wallet account exists for the given wallet_id
+    /// @param wallet_id: Wallet identifier (32 bytes)
+    /// @return bool - True if wallet account exists, false otherwise
     #[view]
     public fun has_wallet_account(wallet_id: vector<u8>): bool;
 
     /// Get the WalletAccount object for a given wallet_id
-    /// @param wallet_id: Wallet identifier
+    /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return Object<WalletAccount> - Wallet account object
     #[view]
     public fun get_wallet_account(wallet_id: vector<u8>): Object<WalletAccount>;
 
-    /// Get a specific asset data for a wallet account
-    /// @param wallet_id: Wallet identifier
+    /// Get detailed asset data for a specific asset in a wallet account
+    /// @param wallet_id: Wallet identifier (32 bytes)
     /// @param asset: Asset metadata object
-    /// @return AccountAsset - Asset data including amounts, LP, rewards, etc.
+    /// @return AccountAsset - Complete asset data including all amounts, LP tokens, and rewards
     #[view]
     public fun get_wallet_account_asset(
         wallet_id: vector<u8>, 
@@ -121,16 +99,16 @@ module moneyfi::wallet_account {
     ): AccountAsset;
 
     /// Get all assets data for a wallet account
-    /// @param wallet_id: Wallet identifier
-    /// @return (asset_addresses, account_assets) - List of asset addresses and their corresponding data
+    /// @param wallet_id: Wallet identifier (32 bytes)
+    /// @return (vector<address>, vector<AccountAsset>) - Tuple of asset addresses and their data
     #[view]
     public fun get_wallet_account_assets(
         wallet_id: vector<u8>
     ): (vector<address>, vector<AccountAsset>);
 
-    /// Get wallet_id from wallet account object
+    /// Get wallet_id from a wallet account object
     /// @param object: Wallet account object
-    /// @return vector<u8> - Wallet identifier
+    /// @return vector<u8> - Wallet identifier (32 bytes)
     #[view]
     public fun get_wallet_id_by_wallet_account(
         object: Object<WalletAccount>
@@ -140,13 +118,13 @@ module moneyfi::wallet_account {
     // Public Functions
     // ========================================
 
-    /// Get the WalletAccount object address for a given wallet_id
-    /// @param wallet_id: Wallet identifier
+    /// Get the object address for a wallet account
+    /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return address - Wallet account object address
     public fun get_wallet_account_object_address(wallet_id: vector<u8>): address;
 
     /// Get the owner address for a wallet_id
-    /// @param wallet_id: Wallet identifier
+    /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return address - Owner wallet address
     public fun get_owner_address(wallet_id: vector<u8>): address;
 
@@ -159,7 +137,7 @@ module moneyfi::wallet_account {
 
     /// Get wallet_id by owner address
     /// @param addr: Owner address
-    /// @return vector<u8> - Wallet identifier
+    /// @return vector<u8> - Wallet identifier (32 bytes)
     public fun get_wallet_id_by_address(
         addr: address
     ): vector<u8>;

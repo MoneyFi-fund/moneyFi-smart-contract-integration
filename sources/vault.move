@@ -1,5 +1,4 @@
 module moneyfi::vault {
-    use aptos_std::type_info::TypeInfo;
     use aptos_framework::ordered_map::OrderedMap;
     use aptos_framework::object::Object;
     use aptos_framework::fungible_asset::Metadata;
@@ -13,9 +12,7 @@ module moneyfi::vault {
     const E_ASSET_NOT_SUPPORTED: u64 = 4;
     const E_DEPRECATED: u64 = 5;
 
-    // ========================================
-    // Events
-    // ========================================
+    //  -- events
 
     #[event]
     struct DepositedEvent has drop, store {
@@ -39,98 +36,14 @@ module moneyfi::vault {
 
     #[event]
     struct RequestWithdrawEvent has drop, store {
-        request_id: u64,
         wallet_id: vector<u8>,
         asset: Object<Metadata>,
         amount: u64,
-        timestamp: u64
-    }
-
-    #[event]
-    struct UpsertAssetSupportedEvent has drop, store {
-        asset_addr: address,
-        min_deposit: u64,
-        max_deposit: u64,
-        min_withdraw: u64,
-        max_withdraw: u64,
-        lp_exchange_rate: u64,
-        timestamp: u64
-    }
-
-    #[event]
-    struct ConfigureEvent has drop, store {
-        enable_deposit: bool,
-        enable_withdraw: bool,
-        system_fee_percent: u64,
-        referral_percents: vector<u64>,
-        fee_recipient: address,
-        timestamp: u64
-    }
-
-    #[event]
-    struct DepositedToStrategyEvent has drop, store {
-        wallet_id: vector<u8>,
-        asset: Object<Metadata>,
-        strategy: TypeInfo,
-        amount: u64,
-        timestamp: u64
-    }
-
-    #[event]
-    struct WithdrawnFromStrategyEvent has drop, store {
-        wallet_id: vector<u8>,
-        asset: Object<Metadata>,
-        strategy: TypeInfo,
-        amount: u64,
-        interest_amount: u64,
-        system_fee: u64,
-        timestamp: u64
-    }
-
-    #[event]
-    struct SwapAssetsEvent has drop, store {
-        wallet_id: vector<u8>,
-        strategy: u8,
-        from_asset: Object<Metadata>,
-        to_asset: Object<Metadata>,
-        amount_in: u64,
-        amount_out: u64,
-        lp_amount_in: u64,
-        lp_amount_out: u64,
-        timestamp: u64
-    }
-
-    #[event]
-    struct WithdrawFeeEvent has drop, store {
-        asset: Object<Metadata>,
-        recipient: address,
-        amount: u64,
-        timestamp: u64
-    }
-
-    #[event]
-    struct HookEvent has drop, store {
-        data: vector<u8>
-    }
-
-    #[event]
-    struct ClaimReferralFeeEvent has drop, store {
-        asset: Object<Metadata>,
-        recipient: address,
-        amount: u64,
-        timestamp: u64
-    }
-
-    #[event]
-    struct ShareFeeEvent has drop, store {
-        asset: Object<Metadata>,
-        total_fee: u64,
-        referral_fees: OrderedMap<address, u64>,
         timestamp: u64
     }
 
     // ========================================
-    // Deposit Function
+    // Entry Functions
     // ========================================
 
     /// Deposit asset into vault and receive LP tokens
@@ -143,11 +56,7 @@ module moneyfi::vault {
         amount: u64
     );
 
-    // ========================================
-    // Withdraw Functions
-    // ========================================
-
-    /// Withdraw asset from vault by burning LP tokens
+    /// Withdraw asset from vault by burning LP tokens (synchronous)
     /// @param sender: User's signer
     /// @param asset: Asset metadata object to withdraw
     /// @param amount: Amount to withdraw
@@ -155,13 +64,6 @@ module moneyfi::vault {
         sender: &signer, 
         asset: Object<Metadata>, 
         amount: u64
-    );
-
-    /// Withdraw asset from an existing withdrawal request
-    /// @param sender: User's signer
-    /// @param asset: Asset metadata object to withdraw
-    public entry fun withdraw_from_request(
-        sender: &signer, asset: Object<Metadata>
     );
 
     /// Request a withdrawal (asynchronous withdrawal)
@@ -175,6 +77,14 @@ module moneyfi::vault {
         amount: u64
     );
 
+    /// Withdraw asset from an existing withdrawal request
+    /// @param sender: User's signer
+    /// @param asset: Asset metadata object to withdraw
+    public entry fun withdraw_from_request(
+        sender: &signer, 
+        asset: Object<Metadata>
+    );
+
     // ========================================
     // View Functions
     // ========================================
@@ -185,7 +95,7 @@ module moneyfi::vault {
     public fun get_supported_assets(): vector<address>;
 
     /// Get pending referral fees for a specific wallet
-    /// @param wallet_id: Wallet identifier
+    /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return OrderedMap<address, u64> - Map of asset address to pending referral fee amount
     #[view]
     public fun get_pending_referral_fees(
@@ -196,7 +106,9 @@ module moneyfi::vault {
     /// @param asset: Asset metadata object
     /// @return (u128, u128, u128) - Tuple of (total_amount, total_lp_amount, total_distributed_amount)
     #[view]
-    public fun get_asset(asset: Object<Metadata>): (u128, u128, u128);
+    public fun get_asset(
+        asset: Object<Metadata>
+    ): (u128, u128, u128);
 
     /// Get all assets and their total amounts
     /// @return (vector<address>, vector<u128>) - Tuple of (asset_addresses, total_amounts)
@@ -206,19 +118,6 @@ module moneyfi::vault {
     // ========================================
     // Public Functions
     // ========================================
-
-
-    /// Create a withdrawal request programmatically
-    /// Returns the request ID for tracking
-    /// @param account: Wallet account object
-    /// @param asset: Asset metadata object to withdraw
-    /// @param amount: Amount to withdraw
-    /// @return u64 - Request ID
-    public fun create_withdraw_request(
-        account: &Object<WalletAccount>,
-        asset: Object<Metadata>,
-        amount: u64
-    ): u64;
 
     /// Get the LP token metadata object
     /// @return Object<Metadata> - LP token object
