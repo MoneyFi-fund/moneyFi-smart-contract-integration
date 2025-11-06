@@ -60,7 +60,9 @@ module moneyfi::wallet_account {
         verifier: &signer,
         wallet_id: vector<u8>,
         referrer_wallet_id: vector<u8>
-    );
+    ){
+        abort 0;
+    }
 
     // ========================================
     // View Functions
@@ -74,25 +76,29 @@ module moneyfi::wallet_account {
     public fun get_withdrawal_state(
         wallet_id: vector<u8>,
         asset: Object<Metadata>
-    ): (u64, u64, bool);
+    ): (u64, u64, bool){
+        (0,0,true)
+    }
 
     /// Check if a wallet account exists for the given wallet_id
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return bool - True if wallet account exists, false otherwise
     #[view]
-    public fun has_wallet_account(wallet_id: vector<u8>): bool;
+    public fun has_wallet_account(wallet_id: vector<u8>): bool {
+        true
+    }
 
     /// Get the WalletAccount object for a given wallet_id
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return Object<WalletAccount> - Wallet account object
-    #[view]
+    #[native_interface]
     public fun get_wallet_account(wallet_id: vector<u8>): Object<WalletAccount>;
 
     /// Get detailed asset data for a specific asset in a wallet account
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @param asset: Asset metadata object
     /// @return AccountAsset - Complete asset data including all amounts, LP tokens, and rewards
-    #[view]
+    #[native_interface]
     public fun get_wallet_account_asset(
         wallet_id: vector<u8>, 
         asset: Object<Metadata>
@@ -101,7 +107,7 @@ module moneyfi::wallet_account {
     /// Get all assets data for a wallet account
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return (vector<address>, vector<AccountAsset>) - Tuple of asset addresses and their data
-    #[view]
+    #[native_interface]
     public fun get_wallet_account_assets(
         wallet_id: vector<u8>
     ): (vector<address>, vector<AccountAsset>);
@@ -109,7 +115,7 @@ module moneyfi::wallet_account {
     /// Get wallet_id from a wallet account object
     /// @param object: Wallet account object
     /// @return vector<u8> - Wallet identifier (32 bytes)
-    #[view]
+    #[native_interface]
     public fun get_wallet_id_by_wallet_account(
         object: Object<WalletAccount>
     ): vector<u8>;
@@ -121,16 +127,19 @@ module moneyfi::wallet_account {
     /// Get the object address for a wallet account
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return address - Wallet account object address
+    #[native_interface]
     public fun get_wallet_account_object_address(wallet_id: vector<u8>): address;
 
     /// Get the owner address for a wallet_id
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return address - Owner wallet address
+    #[native_interface]
     public fun get_owner_address(wallet_id: vector<u8>): address;
 
     /// Get wallet account object by owner address
     /// @param addr: Owner address
     /// @return Object<WalletAccount> - Wallet account object
+    #[native_interface]
     public fun get_wallet_account_by_address(
         addr: address
     ): Object<WalletAccount>;
@@ -138,6 +147,7 @@ module moneyfi::wallet_account {
     /// Get wallet_id by owner address
     /// @param addr: Owner address
     /// @return vector<u8> - Wallet identifier (32 bytes)
+    #[native_interface]
     public fun get_wallet_id_by_address(
         addr: address
     ): vector<u8>;
