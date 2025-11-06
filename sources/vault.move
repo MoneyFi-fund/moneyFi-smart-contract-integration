@@ -1,7 +1,7 @@
 module moneyfi::vault {
     use std::vector;
     use aptos_framework::ordered_map::{Self, OrderedMap};
-    use aptos_framework::object::Object;
+    use aptos_framework::object::{Self, Object};
     use aptos_framework::fungible_asset::Metadata;
     
     use moneyfi::wallet_account::WalletAccount;
@@ -138,11 +138,13 @@ module moneyfi::vault {
 
     /// Get the LP token metadata object
     /// @return Object<Metadata> - LP token object
-    #[native_interface]
-    public fun get_lp_token(): Object<Metadata>;
+    public fun get_lp_token(): Object<Metadata> {
+        object::address_to_object<Metadata>(@moneyfi)
+    }
 
     /// Get the vault address
     /// @return address - Vault address
-    #[native_interface]
-    public fun get_vault_address(): address;
+    public fun get_vault_address(): address {
+        @moneyfi
+    }
 }

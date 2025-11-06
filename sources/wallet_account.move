@@ -1,7 +1,8 @@
 module moneyfi::wallet_account {
     use std::option::Option;
-    use aptos_framework::ordered_map::OrderedMap;
-    use aptos_framework::object::{Object, ExtendRef};
+    use std::vector;
+    use aptos_framework::ordered_map::{Self, OrderedMap};
+    use aptos_framework::object::{Self, Object, ExtendRef};
     use aptos_framework::fungible_asset::Metadata;
 
     // -- Errors
@@ -91,8 +92,10 @@ module moneyfi::wallet_account {
     /// Get the WalletAccount object for a given wallet_id
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return Object<WalletAccount> - Wallet account object
-    #[native_interface]
-    public fun get_wallet_account(wallet_id: vector<u8>): Object<WalletAccount>;
+    #[view]
+    public fun get_wallet_account(wallet_id: vector<u8>): Object<WalletAccount> {
+        object::address_to_object<WalletAccount>(get_wallet_account_object_address(wallet_id))
+    }
 
     /// Get detailed asset data for a specific asset in a wallet account
     /// @param wallet_id: Wallet identifier (32 bytes)
@@ -102,15 +105,29 @@ module moneyfi::wallet_account {
     public fun get_wallet_account_asset(
         wallet_id: vector<u8>, 
         asset: Object<Metadata>
-    ): AccountAsset;
+    ): AccountAsset {
+        AccountAsset {
+            current_amount: 0,
+            deposited_amount: 0,
+            lp_amount: 0,
+            swap_out_amount: 0,
+            swap_in_amount: 0,
+            distributed_amount: 0,
+            withdrawn_amount: 0,
+            interest_amount: 0,
+            interest_share_amount: 0,
+            rewards: ordered_map::new()
+        }
+    }
 
     /// Get all assets data for a wallet account
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return (vector<address>, vector<AccountAsset>) - Tuple of asset addresses and their data
-    #[native_interface]
     public fun get_wallet_account_assets(
         wallet_id: vector<u8>
-    ): (vector<address>, vector<AccountAsset>);
+    ): (vector<address>, vector<AccountAsset>) {
+        (vector::empty(), vector::empty())
+    }
 
     /// Get wallet_id from a wallet account object
     /// @param object: Wallet account object
@@ -118,7 +135,9 @@ module moneyfi::wallet_account {
     #[native_interface]
     public fun get_wallet_id_by_wallet_account(
         object: Object<WalletAccount>
-    ): vector<u8>;
+    ): vector<u8> {
+        vector::empty()
+    }
 
     // ========================================
     // Public Functions
@@ -127,28 +146,32 @@ module moneyfi::wallet_account {
     /// Get the object address for a wallet account
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return address - Wallet account object address
-    #[native_interface]
-    public fun get_wallet_account_object_address(wallet_id: vector<u8>): address;
+    public fun get_wallet_account_object_address(wallet_id: vector<u8>): address {
+        @moneyfi
+    }
 
     /// Get the owner address for a wallet_id
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return address - Owner wallet address
-    #[native_interface]
-    public fun get_owner_address(wallet_id: vector<u8>): address;
+    public fun get_owner_address(wallet_id: vector<u8>): address {
+        @moneyfi
+    }
 
     /// Get wallet account object by owner address
     /// @param addr: Owner address
     /// @return Object<WalletAccount> - Wallet account object
-    #[native_interface]
     public fun get_wallet_account_by_address(
         addr: address
-    ): Object<WalletAccount>;
+    ): Object<WalletAccount> {
+        object::address_to_object<WalletAccount>(addr)
+    }
 
     /// Get wallet_id by owner address
     /// @param addr: Owner address
     /// @return vector<u8> - Wallet identifier (32 bytes)
-    #[native_interface]
     public fun get_wallet_id_by_address(
         addr: address
-    ): vector<u8>;
+    ): vector<u8> {
+        vector::empty()
+    }
 }
