@@ -1,8 +1,10 @@
 module moneyfi::vault {
+    use aptos_std::ordered_map;
     use aptos_framework::ordered_map::OrderedMap;
     use aptos_framework::object::Object;
     use aptos_framework::fungible_asset::Metadata;
-    
+    use aptos_framework::object;
+
     use moneyfi::wallet_account::WalletAccount;
 
     // -- Errors
@@ -54,7 +56,9 @@ module moneyfi::vault {
         sender: &signer, 
         asset: Object<Metadata>, 
         amount: u64
-    );
+    ) {
+
+    }
 
     /// Withdraw asset from vault by burning LP tokens (synchronous)
     /// @param sender: User's signer
@@ -64,7 +68,9 @@ module moneyfi::vault {
         sender: &signer, 
         asset: Object<Metadata>, 
         amount: u64
-    );
+    ) {
+
+    }
 
     /// Request a withdrawal (asynchronous withdrawal)
     /// Creates a withdrawal request that will be processed by backend
@@ -75,7 +81,9 @@ module moneyfi::vault {
         sender: &signer,
         asset: Object<Metadata>,
         amount: u64
-    );
+    ) {
+
+    }
 
     /// Withdraw asset from an existing withdrawal request
     /// @param sender: User's signer
@@ -83,7 +91,9 @@ module moneyfi::vault {
     public entry fun withdraw_requested_amount(
         sender: &signer, 
         asset: Object<Metadata>
-    );
+    ) {
+
+    }
 
     // ========================================
     // View Functions
@@ -92,7 +102,9 @@ module moneyfi::vault {
     /// Get list of all supported assets in vault
     /// @return vector<address> - List of supported asset addresses
     #[view]
-    public fun get_supported_assets(): vector<address>;
+    public fun get_supported_assets(): vector<address> {
+        vector[]
+    }
 
     /// Get pending referral fees for a specific wallet
     /// @param wallet_id: Wallet identifier (32 bytes)
@@ -100,7 +112,9 @@ module moneyfi::vault {
     #[view]
     public fun get_pending_referral_fees(
         wallet_id: vector<u8>
-    ): OrderedMap<address, u64>;
+    ): OrderedMap<address, u64> {
+        ordered_map::new<address, u64>()
+    }
 
     /// Get asset information (total amount, total LP amount, distributed amount)
     /// @param asset: Asset metadata object
@@ -108,12 +122,16 @@ module moneyfi::vault {
     #[view]
     public fun get_asset(
         asset: Object<Metadata>
-    ): (u128, u128, u128);
+    ): (u128, u128, u128) {
+        (0,0,0)
+    }
 
     /// Get all assets and their total amounts
     /// @return (vector<address>, vector<u128>) - Tuple of (asset_addresses, total_amounts)
     #[view]
-    public fun get_assets(): (vector<address>, vector<u128>);
+    public fun get_assets(): (vector<address>, vector<u128>) {
+        (vector[], vector[])
+    }
     
     // ========================================
     // Public Functions
@@ -121,9 +139,13 @@ module moneyfi::vault {
 
     /// Get the LP token metadata object
     /// @return Object<Metadata> - LP token object
-    public fun get_lp_token(): Object<Metadata>;
+    public fun get_lp_token(): Object<Metadata> {
+        object::address_to_object<Metadata>(@0x1)
+    }
 
     /// Get the vault address
     /// @return address - Vault address
-    public fun get_vault_address(): address;
+    public fun get_vault_address(): address {
+        @0x1
+    }
 }

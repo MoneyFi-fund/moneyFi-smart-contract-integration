@@ -1,7 +1,8 @@
 module moneyfi::wallet_account {
     use std::option::Option;
+    use aptos_std::ordered_map;
     use aptos_framework::ordered_map::OrderedMap;
-    use aptos_framework::object::{Object, ExtendRef};
+    use aptos_framework::object::{Object, ExtendRef, address_to_object};
     use aptos_framework::fungible_asset::Metadata;
 
     // -- Errors
@@ -60,7 +61,7 @@ module moneyfi::wallet_account {
         verifier: &signer,
         wallet_id: vector<u8>,
         referrer_wallet_id: vector<u8>
-    );
+    ) {}
 
     // ========================================
     // View Functions
@@ -74,19 +75,23 @@ module moneyfi::wallet_account {
     public fun get_withdrawal_state(
         wallet_id: vector<u8>,
         asset: Object<Metadata>
-    ): (u64, u64, bool);
+    ): (u64, u64, bool) {
+        (0,0, false)
+    }
 
     /// Check if a wallet account exists for the given wallet_id
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return bool - True if wallet account exists, false otherwise
     #[view]
-    public fun has_wallet_account(wallet_id: vector<u8>): bool;
+    public fun has_wallet_account(wallet_id: vector<u8>): bool {false}
 
     /// Get the WalletAccount object for a given wallet_id
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return Object<WalletAccount> - Wallet account object
     #[view]
-    public fun get_wallet_account(wallet_id: vector<u8>): Object<WalletAccount>;
+    public fun get_wallet_account(wallet_id: vector<u8>): Object<WalletAccount> {
+        address_to_object<WalletAccount>(@0x1)
+    }
 
     /// Get detailed asset data for a specific asset in a wallet account
     /// @param wallet_id: Wallet identifier (32 bytes)
@@ -96,7 +101,20 @@ module moneyfi::wallet_account {
     public fun get_wallet_account_asset(
         wallet_id: vector<u8>, 
         asset: Object<Metadata>
-    ): AccountAsset;
+    ): AccountAsset {
+        AccountAsset {
+            lp_amount: 0,
+            current_amount: 0,
+            deposited_amount: 0,
+            distributed_amount: 0,
+            interest_amount: 0,
+            interest_share_amount: 0,
+            rewards: ordered_map::new(),
+            swap_in_amount: 0,
+            swap_out_amount: 0,
+            withdrawn_amount: 0
+        }
+    }
 
     /// Get all assets data for a wallet account
     /// @param wallet_id: Wallet identifier (32 bytes)
@@ -104,7 +122,9 @@ module moneyfi::wallet_account {
     #[view]
     public fun get_wallet_account_assets(
         wallet_id: vector<u8>
-    ): (vector<address>, vector<AccountAsset>);
+    ): (vector<address>, vector<AccountAsset>){
+        (vector[], vector[])
+    }
 
     /// Get wallet_id from a wallet account object
     /// @param object: Wallet account object
@@ -112,7 +132,9 @@ module moneyfi::wallet_account {
     #[view]
     public fun get_wallet_id_by_wallet_account(
         object: Object<WalletAccount>
-    ): vector<u8>;
+    ): vector<u8> {
+        vector[]
+    }
 
     // ========================================
     // Public Functions
@@ -121,24 +143,32 @@ module moneyfi::wallet_account {
     /// Get the object address for a wallet account
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return address - Wallet account object address
-    public fun get_wallet_account_object_address(wallet_id: vector<u8>): address;
+    public fun get_wallet_account_object_address(wallet_id: vector<u8>): address {
+        @0x1
+    }
 
     /// Get the owner address for a wallet_id
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return address - Owner wallet address
-    public fun get_owner_address(wallet_id: vector<u8>): address;
+    public fun get_owner_address(wallet_id: vector<u8>): address {
+        @0x1
+    }
 
     /// Get wallet account object by owner address
     /// @param addr: Owner address
     /// @return Object<WalletAccount> - Wallet account object
     public fun get_wallet_account_by_address(
         addr: address
-    ): Object<WalletAccount>;
+    ): Object<WalletAccount> {
+        address_to_object(@0x1)
+    }
 
     /// Get wallet_id by owner address
     /// @param addr: Owner address
     /// @return vector<u8> - Wallet identifier (32 bytes)
     public fun get_wallet_id_by_address(
         addr: address
-    ): vector<u8>;
+    ): vector<u8> {
+        vector[]
+    }
 }
