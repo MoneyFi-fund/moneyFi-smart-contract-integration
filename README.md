@@ -183,6 +183,30 @@ Return all supported asset addresses in the vault.
 
 ---
 
+### `estimate_total_fund_value`
+```move
+#[view]
+public fun estimate_total_fund_value(
+    user_addr: address,
+    asset: Object<Metadata>
+): u64
+```
+**Description:**
+Estimate the total fund value of a user in the vault for a specific asset.
+Calculation includes:
+* User's current asset balances, converting all other assets to the target asset via strategy rates
+* Estimated withdrawable amounts from strategies
+* Deduction of system fees if applicable
+
+**Parameters:**
+user_addr: The user's address
+asset: Asset metadata object (target asset to express total value in)
+
+**Returns:**
+u64 – Total estimated value after conversions and fees
+
+---
+
 ### `get_pending_referral_fees`
 ```move
 #[view]

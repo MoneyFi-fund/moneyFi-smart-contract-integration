@@ -105,6 +105,21 @@ module moneyfi::vault {
         vector::empty()
     }
 
+    /// Estimate the user's total fund value for a given asset.
+    ///
+    /// This includes:
+    /// - User's current asset balances converted to the target asset
+    /// - Estimated withdrawable amounts from strategies
+    /// - Deduction of system fees if applicable
+    /// 
+    /// @param user_addr - The user's address
+    /// @param asset - Target asset to express the total value in
+    /// @return u64 - Estimated total fund value after conversions and fees
+    #[view]
+    public fun estimate_total_fund_value(user_addr: address, asset: Object<Metadata>): u64 {
+        0
+    }
+
     /// Get pending referral fees for a specific wallet
     /// @param wallet_id: Wallet identifier (32 bytes)
     /// @return OrderedMap<address, u64> - Map of asset address to pending referral fee amount
